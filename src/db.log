@@ -5,3 +5,6 @@ SET animal vaca
 DELETE animal
 SET nombre juan
 DELETE nombre
+SET nombre juan
+DELETE nombre
+SET animal perro

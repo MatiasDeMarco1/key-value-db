@@ -1,5 +1,4 @@
 use std::ops::ControlFlow;
-use std::io;
 use std::io::Write;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
@@ -26,25 +25,26 @@ fn main() {
         .append(true)
         .open("db.log")
         .unwrap();
-
-    loop {
-        print!("> ");
-        io::stdout().flush().unwrap();
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim();
-        let cmd = parse(input);
-        match execute(cmd, &mut db, &mut file) {
-            ControlFlow::Continue(msg) => {
-                println!("{}", msg);
-            },
-            ControlFlow::Break(msg) => {
-                println!("{}", msg);
-                break;
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    for stream in listener.incoming() {
+        let mut stream = stream.unwrap();
+        let mut reader =BufReader::new(stream.try_clone().unwrap());
+        loop {
+            let mut input = String::new();
+            reader.read_line(&mut input).unwrap();
+            let input = input.trim();
+            let cmd = parse(input);
+            match execute(cmd, &mut db, &mut file) {
+                ControlFlow::Continue(msg) => {
+                    writeln!(stream, "{}", msg).unwrap();
+                },
+                ControlFlow::Break(msg) => {
+                    writeln!(stream, "{}", msg).unwrap();
+                    break;
+                }
             }
         }
     }
-
 }
 enum Command {
     Set(String, String),
