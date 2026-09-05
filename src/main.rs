@@ -4,6 +4,7 @@ use std::io::Write;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::fs::File;
+use std::net::TcpListener;
 use std::io::{BufRead, BufReader};
 
 fn main() {
@@ -33,8 +34,14 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
         let input = input.trim();
         let cmd = parse(input);
-        if let ControlFlow::Break(_) = execute(cmd, &mut db, &mut file){
-            break;
+        match execute(cmd, &mut db, &mut file) {
+            ControlFlow::Continue(msg) => {
+                println!("{}", msg);
+            },
+            ControlFlow::Break(msg) => {
+                println!("{}", msg);
+                break;
+            }
         }
     }
 
@@ -56,18 +63,21 @@ fn parse(input: &str) -> Command{
         _ => Command::Unknown
     }
 }
-fn execute(cmd: Command, db: &mut HashMap<String, String>,file:  &mut File) -> ControlFlow<()>{
+fn execute(cmd: Command, db: &mut HashMap<String, String>,file:  &mut File) -> ControlFlow<String, String>{
     match cmd {
-        Command::Set(key ,value) => {db.insert(key.clone(), value.clone()); writeln!(file, "SET {} {}", key, value).unwrap(); println!("Se inserto correctamente");ControlFlow::Continue(())},
-        Command::Get(key) => {match db.get(&key) {
-            Some(value) => println!("{}", value),
-            None => println!("Key not found..."),
-        }; ControlFlow::Continue(())},
-        Command::Delete(key) => {match db.remove(&key) {
-            Some(value) => {println!("Deleted {}", value); writeln!(file, "DELETE {}", key).unwrap();},
-            None => println!("Key not found"),
-        }; ControlFlow::Continue(())},
-        Command::Exit => {println!("Exit."); ControlFlow::Break(())},
-        Command::Unknown => {println!("Err.."); ControlFlow::Continue(())}
+        Command::Set(key ,value) => {db.insert(key.clone(), value.clone()); writeln!(file, "SET {} {}", key, value).unwrap(); ControlFlow::Continue("Se inserto correctamente".to_string())},   
+        Command::Get(key) => {let msg = match db.get(&key) {
+            Some(value) => format!("Get: {}", value),
+            None => "Key not found...".to_string(),
+        }; ControlFlow::Continue(msg)},
+        Command::Delete(key) => {let msg = match db.remove(&key) {
+            Some(value) => {
+                writeln!(file, "DELETE {}", key).unwrap();
+                format!("Deleted {}", value)
+            },
+            None => "Key not found".to_string(),
+        }; ControlFlow::Continue(msg)},
+        Command::Exit =>  ControlFlow::Break("Exit...".to_string()),
+        Command::Unknown => ControlFlow::Continue("Err...".to_string())
     }
 }
