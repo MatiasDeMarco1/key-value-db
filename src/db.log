@@ -1,3 +1,5 @@
 SET nombre matias
 SET nombre juan
 DELETE nombre
+SET animal vaca
+DELETE animal

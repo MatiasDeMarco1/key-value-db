@@ -4,15 +4,28 @@ use std::io::Write;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 use std::fs::File;
+use std::io::{BufRead, BufReader};
 
 fn main() {
+    let mut db: HashMap<String, String> = HashMap::new();
+    if let Ok(read_file) = File::open("db.log") {
+        let reader = BufReader::new(read_file);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            let cmd = parse(&line);
+            match cmd {
+                Command::Set(key,value ) => {db.insert(key, value);},
+                Command::Delete(key) => {db.remove(&key);},
+                _ => {},
+            }
+        }
+    }
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open("db.log")
         .unwrap();
 
-    let mut db: HashMap<String, String> = HashMap::new();
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
