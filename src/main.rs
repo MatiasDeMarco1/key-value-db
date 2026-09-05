@@ -27,20 +27,32 @@ fn main() {
     }
 }
 fn handle_client(mut stream: TcpStream, db: Arc<Mutex<HashMap<String, String>>>, file: Arc<Mutex<File>>) {
-    let mut reader = BufReader::new(stream.try_clone().unwrap());
+    let cloned = match stream.try_clone() {
+        Ok(s) => s,
+        Err(_) => return,
+    };
+    let mut reader = BufReader::new(cloned);
     loop {
         let mut input = String::new();
-        reader.read_line(&mut input).unwrap();
+        match reader.read_line(&mut input) {
+            Ok(0) => break, 
+            Ok(_) => {},    
+            Err(_) => break,
+        }
         let input = input.trim();
         let cmd = parse(input);
         let mut db_locked = db.lock().unwrap();
         let mut file_locked = file.lock().unwrap();
         match execute(cmd, &mut db_locked, &mut file_locked) {
             ControlFlow::Continue(msg) => {
-                writeln!(stream, "{}", msg).unwrap();
+                if let Err(_) = writeln!(stream, "{}", msg){
+                    break;
+                };
             },
             ControlFlow::Break(msg) => {
-                writeln!(stream, "{}", msg).unwrap();
+                if let Err(_) = writeln!(stream, "{}", msg){
+                    break;
+                };
                 break;
             }
         }        
