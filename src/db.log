@@ -8,3 +8,5 @@ DELETE nombre
 SET nombre juan
 DELETE nombre
 SET animal perro
+SET nombre agostina
+DELETE nombre
