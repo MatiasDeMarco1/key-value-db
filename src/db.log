@@ -1,0 +1,3 @@
+SET nombre matias
+SET nombre juan
+DELETE nombre

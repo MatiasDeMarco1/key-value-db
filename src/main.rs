@@ -2,8 +2,16 @@ use std::ops::ControlFlow;
 use std::io;
 use std::io::Write;
 use std::collections::HashMap;
+use std::fs::OpenOptions;
+use std::fs::File;
 
 fn main() {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("db.log")
+        .unwrap();
+
     let mut db: HashMap<String, String> = HashMap::new();
     loop {
         print!("> ");
@@ -12,15 +20,12 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
         let input = input.trim();
         let cmd = parse(input);
-        if let ControlFlow::Break(_) = execute(cmd, &mut db){
+        if let ControlFlow::Break(_) = execute(cmd, &mut db, &mut file){
             break;
         }
     }
 
 }
-
-
-
 enum Command {
     Set(String, String),
     Get(String),
@@ -38,15 +43,15 @@ fn parse(input: &str) -> Command{
         _ => Command::Unknown
     }
 }
-fn execute(cmd: Command, db: &mut HashMap<String, String>) -> ControlFlow<()>{
+fn execute(cmd: Command, db: &mut HashMap<String, String>,file:  &mut File) -> ControlFlow<()>{
     match cmd {
-        Command::Set(key ,value) => {db.insert(key, value); println!("Se inserto correctamente");ControlFlow::Continue(())},
+        Command::Set(key ,value) => {db.insert(key.clone(), value.clone()); writeln!(file, "SET {} {}", key, value).unwrap(); println!("Se inserto correctamente");ControlFlow::Continue(())},
         Command::Get(key) => {match db.get(&key) {
             Some(value) => println!("{}", value),
             None => println!("Key not found..."),
         }; ControlFlow::Continue(())},
         Command::Delete(key) => {match db.remove(&key) {
-            Some(value) => println!("Deleted {}", value),
+            Some(value) => {println!("Deleted {}", value); writeln!(file, "DELETE {}", key).unwrap();},
             None => println!("Key not found"),
         }; ControlFlow::Continue(())},
         Command::Exit => {println!("Exit."); ControlFlow::Break(())},
